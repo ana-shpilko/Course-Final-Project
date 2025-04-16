@@ -13,17 +13,6 @@ type Response struct {
 	Error string `json:"error,omitempty"`
 }
 
-func writeJson(w http.ResponseWriter, data any) {
-
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	jsonData, err := json.Marshal(data)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("Ошибка при передаче данных: %v", err), http.StatusInternalServerError)
-		return
-	}
-	w.Write(jsonData)
-}
-
 func checkDate(task *db.Task) error {
 
 	now := time.Now()
@@ -49,45 +38,45 @@ func checkDate(task *db.Task) error {
 		} else {
 			next, err := NextDate(now, task.Date, task.Repeat)
 			if err != nil {
-				return fmt.Errorf("правило указано в некорректном формате: %w", err)
+				return fmt.Errorf("правило повторения указано в некорректном формате: %w", err)
 			}
 			task.Date = next
 		}
 	}
 	if len(task.Repeat) > 0 && (task.Repeat[0] == 'w' || task.Repeat[0] == 'm') {
-		return fmt.Errorf("правило указано в некорректном формате")
+		return fmt.Errorf("правило повторения указано в некорректном формате")
 	}
 	return nil
 }
 
 func AddTaskHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		writeJson(w, Response{Error: "некорректный метод запроса"})
+		WriteJson(w, Response{Error: "некорректный метод запроса"})
 		return
 	}
 
 	var task db.Task
 
 	if err := json.NewDecoder(r.Body).Decode(&task); err != nil {
-		writeJson(w, Response{Error: "ошибка при чтении задачи: " + err.Error()})
+		WriteJson(w, Response{Error: "ошибка при чтении задачи: " + err.Error()})
 		return
 	}
 
 	if task.Title == "" {
-		writeJson(w, Response{Error: "не указан заголовок задачи"})
+		WriteJson(w, Response{Error: "не указан заголовок задачи"})
 		return
 	}
 
 	if err := checkDate(&task); err != nil {
-		writeJson(w, Response{Error: "дата указана в некорректном формате: " + err.Error()})
+		WriteJson(w, Response{Error: "дата указана в некорректном формате: " + err.Error()})
 		return
 	}
 
-	id, err := db.AddTask(db.DB, &task)
+	id, err := db.AddTask(&task)
 	if err != nil {
-		writeJson(w, Response{Error: "ошибка при добавлении задачи: " + err.Error()})
+		WriteJson(w, Response{Error: "ошибка при добавлении задачи: " + err.Error()})
 		return
 	}
 
-	writeJson(w, Response{ID: id})
+	WriteJson(w, Response{ID: id})
 }

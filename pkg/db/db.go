@@ -8,8 +8,6 @@ import (
 	_ "modernc.org/sqlite"
 )
 
-var DB *sql.DB
-
 const schema = `
 CREATE TABLE scheduler (
 	id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -20,6 +18,8 @@ CREATE TABLE scheduler (
 	);
 	CREATE INDEX scheduler_date ON scheduler(date);
 	`
+
+var DB *sql.DB
 
 func Init(dbFile string) error {
 

@@ -1,15 +1,13 @@
 package main
 
 import (
-	"database/sql"
 	"go1f/pkg/server"
 	"log"
 
-	"github.com/ana-shpilko/Course-Final-Project/pkg/db"
+	"go1f/pkg/db"
+
 	_ "modernc.org/sqlite"
 )
-
-var DB *sql.DB
 
 func main() {
 
@@ -18,7 +16,7 @@ func main() {
 		log.Fatal("Ошибка при открытии базы данных: ", err)
 		return
 	}
-	defer DB.Close()
+	defer db.DB.Close()
 
 	if err := server.Run(); err != nil {
 		log.Fatal("Ошибка при запуске сервера: ", err)

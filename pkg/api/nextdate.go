@@ -31,15 +31,15 @@ func NextDate(now time.Time, dstart string, repeat string) (string, error) {
 	parts := strings.Split(repeat, " ")
 
 	if len(parts) > 2 {
-		return "", errors.New("правило указано в некорректном формате")
+		return "", errors.New("правило повторения указано в некорректном формате")
 	}
 
 	if parts[0] != "d" && parts[0] != "y" {
-		return "", errors.New("правило указано в некорректном формате: недопустимый символ")
+		return "", errors.New("правило повторения указано в некорректном формате: недопустимый символ")
 	}
 
 	if len(parts) == 1 && parts[0] == "d" {
-		return "", errors.New("правило указано в некорректном формате: не указан интервал в днях")
+		return "", errors.New("правило повторения указано в некорректном формате: не указан интервал в днях")
 	}
 
 	switch parts[0] {
