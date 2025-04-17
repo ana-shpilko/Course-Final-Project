@@ -11,7 +11,7 @@ import (
 
 func main() {
 
-	err := db.Init("scheduler.db")
+	err := db.Init()
 	if err != nil {
 		log.Fatal("Ошибка при открытии базы данных: ", err)
 		return

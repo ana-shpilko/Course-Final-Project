@@ -6,14 +6,30 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 )
 
 func Run() error {
 
-	port := 7540
+	defaultPort := 7540
 	webDir := "./web"
 
-	_, err := os.Stat(webDir)
+	portEnv := os.Getenv("TODO_PORT")
+
+	var port int
+	var err error
+
+	if portEnv != "" {
+		port, err = strconv.Atoi(portEnv)
+		if err != nil {
+			log.Fatal("Ошибка при подключении к порту: ", err)
+			return err
+		}
+	} else {
+		port = defaultPort
+	}
+
+	_, err = os.Stat(webDir)
 	if os.IsNotExist(err) {
 		log.Fatal("Директория не найдена: ", err)
 	}

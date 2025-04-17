@@ -3,6 +3,7 @@ package db
 import (
 	"database/sql"
 	"fmt"
+	"time"
 
 	_ "modernc.org/sqlite"
 )
@@ -36,11 +37,39 @@ func AddTask(task *Task) (int64, error) {
 	return id, nil
 }
 
-func Tasks(limit int) ([]*Task, error) {
+func Tasks(limit int, search string) ([]*Task, error) {
+	var (
+		query           string
+		args            []any
+		inputDateFormat = "02.01.2006"
+		dbDateFormat    = "20060102"
+	)
 
-	rows, err := DB.Query("SELECT id, date, title, comment, repeat FROM scheduler ORDER BY date ASC LIMIT ?", limit)
+	baseQuery := "SELECT id, date, title, comment, repeat FROM scheduler"
+
+	if search != "" {
+		searchDate, err := time.Parse(inputDateFormat, search)
+		if err == nil {
+			query = baseQuery + " WHERE date = ? ORDER BY date ASC LIMIT ?"
+			args = []any{
+				searchDate.Format(dbDateFormat),
+				limit,
+			}
+		} else {
+			likeQuery := "%" + search + "%"
+			query = baseQuery + " WHERE title LIKE ? OR comment LIKE ? ORDER BY date ASC LIMIT ?"
+			args = []any{
+				likeQuery, likeQuery, limit,
+			}
+		}
+	} else {
+		query = baseQuery + " ORDER BY date ASC LIMIT ?"
+		args = []any{limit}
+	}
+
+	rows, err := DB.Query(query, args...)
 	if err != nil {
-		return nil, fmt.Errorf("ошибка при получении списка задач: %w", err)
+		return nil, fmt.Errorf("ошибка выполнения запроса: %w", err)
 	}
 	defer rows.Close()
 
@@ -49,15 +78,13 @@ func Tasks(limit int) ([]*Task, error) {
 		var task Task
 		err := rows.Scan(&task.ID, &task.Date, &task.Title, &task.Comment, &task.Repeat)
 		if err != nil {
-			return nil, fmt.Errorf("ошибка при получении списка задач: %w", err)
+			return nil, fmt.Errorf("ошибка при чтении задач: %w", err)
 		}
 		tasks = append(tasks, &task)
 	}
-
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("ошибка при получении списка задач: %w", err)
+		return nil, fmt.Errorf("ошибка при чтении задач: %w", err)
 	}
-
 	return tasks, nil
 }
 

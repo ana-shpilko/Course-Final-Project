@@ -21,7 +21,13 @@ CREATE TABLE scheduler (
 
 var DB *sql.DB
 
-func Init(dbFile string) error {
+func Init() error {
+
+	dbFile := os.Getenv("TODO_DBFILE")
+
+	if dbFile == "" {
+		dbFile = "./scheduler.db"
+	}
 
 	_, err := os.Stat(dbFile)
 
