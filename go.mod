@@ -3,6 +3,7 @@ module github.com/ana-shpilko/Course-Final-Project
 go 1.23.3
 
 replace go1f => ./
+
 require go1f v0.0.0
 
 require (
