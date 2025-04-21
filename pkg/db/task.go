@@ -69,7 +69,7 @@ func Tasks(limit int, search string) ([]*Task, error) {
 
 	rows, err := DB.Query(query, args...)
 	if err != nil {
-		return nil, fmt.Errorf("ошибка выполнения запроса: %w", err)
+		return nil, fmt.Errorf("ошибка при чтении задач: %w", err)
 	}
 	defer rows.Close()
 
@@ -137,7 +137,7 @@ func DeleteTask(id string) error {
 	}
 
 	if rowsAffected == 0 {
-		return fmt.Errorf("задача c указанным идентификатором не найдена")
+		return fmt.Errorf("ошибка при удалении задачи: %w", err)
 	}
 
 	return nil
