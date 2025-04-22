@@ -3,9 +3,14 @@ package db
 import (
 	"database/sql"
 	"fmt"
+	"strings"
 	"time"
 
 	_ "modernc.org/sqlite"
+)
+
+const (
+	DateFormat = "20060102"
 )
 
 type Task struct {
@@ -42,7 +47,6 @@ func Tasks(limit int, search string) ([]*Task, error) {
 		query           string
 		args            []any
 		inputDateFormat = "02.01.2006"
-		dbDateFormat    = "20060102"
 	)
 
 	baseQuery := "SELECT id, date, title, comment, repeat FROM scheduler"
@@ -52,7 +56,7 @@ func Tasks(limit int, search string) ([]*Task, error) {
 		if err == nil {
 			query = baseQuery + " WHERE date = ? ORDER BY date ASC LIMIT ?"
 			args = []any{
-				searchDate.Format(dbDateFormat),
+				searchDate.Format(DateFormat),
 				limit,
 			}
 		} else {
@@ -104,23 +108,44 @@ func GetTask(id string) (*Task, error) {
 
 func UpdateTask(task *Task) error {
 
-	query := "UPDATE scheduler SET date = :date, title = :title, comment = :comment, repeat = :repeat WHERE id = :id"
-	res, err := DB.Exec(query,
-		sql.Named("date", task.Date),
-		sql.Named("title", task.Title),
-		sql.Named("comment", task.Comment),
-		sql.Named("repeat", task.Repeat),
-		sql.Named("id", task.ID))
+	fieldsToUpdate := []string{}
+	args := []any{}
 
-	if err != nil {
-		return fmt.Errorf("ошибка при изменении задачи: %w", err)
+	if task.Date != "" {
+		fieldsToUpdate = append(fieldsToUpdate, "date = :date")
+		args = append(args, sql.Named("date", task.Date))
 	}
+	if task.Title != "" {
+		fieldsToUpdate = append(fieldsToUpdate, "title = :title")
+		args = append(args, sql.Named("title", task.Title))
+	}
+	if task.Comment != "" {
+		fieldsToUpdate = append(fieldsToUpdate, "comment = :comment")
+		args = append(args, sql.Named("comment", task.Comment))
+	}
+	if task.Repeat != "" {
+		fieldsToUpdate = append(fieldsToUpdate, "repeat = :repeat")
+		args = append(args, sql.Named("repeat", task.Repeat))
+	}
+
+	if len(fieldsToUpdate) == 0 {
+		return fmt.Errorf("не указаны поля для обновления")
+	}
+
+	query := fmt.Sprintf("UPDATE scheduler SET %s WHERE id = :id", strings.Join(fieldsToUpdate, ", "))
+	args = append(args, sql.Named("id", task.ID))
+
+	res, err := DB.Exec(query, args...)
+	if err != nil {
+		return fmt.Errorf("ошибка при обновлении задачи: %w", err)
+	}
+
 	count, err := res.RowsAffected()
 	if err != nil {
-		return fmt.Errorf("ошибка при изменении задачи: %w", err)
+		return fmt.Errorf("ошибка при обновлении задачи: %w", err)
 	}
 	if count == 0 {
-		return fmt.Errorf("ошибка при изменении задачи: %w", err)
+		return fmt.Errorf("ошибка при обновлении задачи: %w", err)
 	}
 	return nil
 }
@@ -138,23 +163,6 @@ func DeleteTask(id string) error {
 
 	if rowsAffected == 0 {
 		return fmt.Errorf("ошибка при удалении задачи: %w", err)
-	}
-
-	return nil
-}
-
-func UpdateDate(next string, id string) error {
-	res, err := DB.Exec("UPDATE scheduler SET date = :date WHERE id = :id", sql.Named("date", next), sql.Named("id", id))
-
-	if err != nil {
-		return fmt.Errorf("ошибка при изменении задачи: %w", err)
-	}
-	count, err := res.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("ошибка при изменении задачи: %w", err)
-	}
-	if count == 0 {
-		return fmt.Errorf("ошибка при изменении задачи: %w", err)
 	}
 	return nil
 }

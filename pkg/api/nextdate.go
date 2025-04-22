@@ -2,6 +2,8 @@ package api
 
 import (
 	"errors"
+	"go1f/pkg/db"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -9,8 +11,7 @@ import (
 )
 
 const (
-	dateFormat = "20060102"
-	maxDays    = 400
+	maxDays = 400
 )
 
 func afterNow(date, now time.Time) bool {
@@ -23,7 +24,7 @@ func NextDate(now time.Time, dstart string, repeat string) (string, error) {
 		return "", errors.New("данная задача не подлежит повторению")
 	}
 
-	date, err := time.Parse(dateFormat, dstart)
+	date, err := time.Parse(db.DateFormat, dstart)
 	if err != nil {
 		return "", errors.New("дата указана в некорректном формате")
 	}
@@ -62,7 +63,7 @@ func NextDate(now time.Time, dstart string, repeat string) (string, error) {
 				break
 			}
 		}
-		return date.Format(dateFormat), nil
+		return date.Format(db.DateFormat), nil
 
 	case "y":
 		for {
@@ -71,12 +72,17 @@ func NextDate(now time.Time, dstart string, repeat string) (string, error) {
 				break
 			}
 		}
-		return date.Format(dateFormat), nil
+		return date.Format(db.DateFormat), nil
 	}
-	return date.Format(dateFormat), nil
+	return date.Format(db.DateFormat), nil
 }
 
 func NextDayHandler(w http.ResponseWriter, r *http.Request) {
+
+	if r.Method != http.MethodGet {
+		WriteErrorJson(w, http.StatusMethodNotAllowed, ErrorResponse{Error: "некорректный метод запроса"})
+		return
+	}
 
 	nowParam := r.FormValue("now")
 	dateParam := r.FormValue("date")
@@ -88,24 +94,26 @@ func NextDayHandler(w http.ResponseWriter, r *http.Request) {
 	if nowParam == "" {
 		now = time.Now()
 	} else {
-		now, err = time.Parse(dateFormat, nowParam)
+		now, err = time.Parse(db.DateFormat, nowParam)
 		if err != nil {
-			http.Error(w, "дата указана в некорректном формате", http.StatusBadRequest)
+			WriteErrorJson(w, http.StatusBadRequest, ErrorResponse{Error: "дата указана в некорректном формате"})
 			return
 		}
 	}
 
 	if dateParam == "" || repeatParam == "" {
-		http.Error(w, "отсутствуют параметры даты и/или правила повторения", http.StatusBadRequest)
+		WriteErrorJson(w, http.StatusBadRequest, ErrorResponse{Error: "отсутствуют параметры даты и/или правила повторения"})
 		return
 	}
 
 	res, err := NextDate(now, dateParam, repeatParam)
 	if err != nil {
-		http.Error(w, "ошибка при выполнении запроса", http.StatusBadRequest)
+		WriteErrorJson(w, http.StatusInternalServerError, ErrorResponse{Error: "ошибка при выполнении запроса"})
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(res))
+	if _, err := w.Write([]byte(res)); err != nil {
+		log.Printf("ошибка при передаче ответа: %v", err)
+	}
+
 }

@@ -35,11 +35,10 @@ func Run() error {
 	}
 
 	http.Handle("/", http.FileServer(http.Dir(webDir)))
-	http.Handle("/js/", http.StripPrefix("/js/", http.FileServer(http.Dir(webDir+"/js"))))
-	http.Handle("/css/", http.StripPrefix("/css/", http.FileServer(http.Dir(webDir+"/css"))))
-	http.Handle("/favicon.ico", http.FileServer(http.Dir(webDir)))
 
 	api.Init()
+
+	log.Printf("Сервер запущен на порту %d", port)
 
 	err = http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
 	if err != nil {

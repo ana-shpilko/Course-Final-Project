@@ -19,8 +19,8 @@ COPY . .
 
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /task_planner .
 
-ENV TODO_PORT=3030
+ENV TODO_PORT=7540
 
-EXPOSE 3030
+EXPOSE ${TODO_PORT}
 
 CMD ["/task_planner"]
